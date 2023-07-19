@@ -1,3 +1,0 @@
-Переменная select_n_rows содержит значение { "schema": "sources", "table": "brand", "rows_number": 5 }
-
-
