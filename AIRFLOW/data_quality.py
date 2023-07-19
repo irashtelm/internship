@@ -313,7 +313,7 @@ def data_quality(conn_from,
 
 
 # Параметры подключения и хранения данных
-conn_info_to = {'conn_id': 'dds_id', 'schema': 'dds'}
+conn_info_to = {'conn_id': 'dds_id', 'schema': 'dds'}  # {'conn_id': 'dds_id', 'schema': 'dds'}
 conn_info = {
     'brand': {'from': {'conn_id': 'sources_id', 'schema': 'sources'}, 'to': conn_info_to},
     'category': {'from': {'conn_id': 'sources_id', 'schema': 'sources'}, 'to': conn_info_to},
@@ -528,7 +528,8 @@ error_handling = {
     'product': {
         'missing': {'drop': ['product_id'],
                     'fill': {'name_short': 'Товар не определён',
-                             'category_id': '-1', 'brand_id': '-1'}},
+                             'category_id': '-1',
+                             'brand_id': '-1'}},
         'duplicate': ['product_id'],
         'noise': {'name_short': {"regex": "^[0-9]*$", "match_replace": None},
                   'product_id': {"regex": "^[a-zA-Z]*$", "match_replace": None}},
@@ -596,22 +597,6 @@ error_handling = {
                                                  'field_ref': 'pos',
                                                  'conn_ref': conn_info['transaction_stores']['from']}}
     }
-}
-
-tables_ref = {
-    'product': [
-        {'field': 'brand_id', 'table_ref': 'brand', 'field_ref': 'brand_id'},
-        {'field': 'category_id', 'table_ref': 'category', 'field_ref': 'category_id'}
-    ],
-    'transaction_stores': [{'field': 'pos', 'table_ref': 'stores', 'field_ref': 'pos'}],
-    'stock': [
-        {'field': 'product_id', 'table_ref': 'product', 'field_ref': 'product_id'},
-        {'field': 'pos', 'table_ref': 'stores', 'field_ref': 'pos'}
-    ],
-    'transaction': [
-        {'field': 'product_id', 'table_ref': 'product', 'field_ref': 'product_id'},
-        {'field': 'transaction_id', 'table_ref': 'transaction_stores', 'field_ref': 'transaction_id'}
-    ]
 }
 
 if __name__ == "__main__":

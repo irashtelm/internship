@@ -30,7 +30,7 @@ def data_upload_dag(conn_from,
                         error_handling=error_handling)
     except Exception as error:
         raise AirflowException(f"ERROR: {error}") from error
-    
+
 
 with DAG('data_upload', description="",
          schedule_interval="@once",  # @daily
