@@ -54,27 +54,25 @@ DAG запускает исполнение 10 тасок. При этом, па
 
 Для каждой таблицы сформированы свои требования к качеству данных. Хранение набора параметров для каждой таблицы реализован следующим образом:
 
-    'product': {
-        'missing': {'drop': ['product_id'],
-                    'fill': {'name_short': 'Товар не определён',
-                             'category_id': '-1', 'brand_id': '-1'}},
-        'duplicate': ['product_id'],
-        'noise': {'name_short': {"regex": "^[0-9]*$", "match_replace": None},
-                  'product_id': {"regex": "^[a-zA-Z]*$", "match_replace": None}},
-        'len_restrict': {'name_short': {'min': 2, 'max': None}},
-        'data_types': {'product_id': 'integer', 'name_short': 'text',
-                       'category_id': 'text', 'pricing_line_id': 'integer',
-                       'brand_id': 'integer'},
-        'ref_integrity': {'transaction': {'field': 'product_id',
-                                          'field_ref': 'product_id',
-                                          'conn_ref': conn_info['transaction']['from']},
-                          'stock': {'field': 'product_id',
-                                    'field_ref': 'product_id',
-                                    'conn_ref': conn_info['stock']['from']}}
-    }
+    'category': {
+        'missing': {'drop': ['category_id'],
+                    'fill': {'category_name': 'Категория не определена'}},
+        'duplicate': ['category_id'],
+        'noise': {'category_name': {"regex": "_", "match_replace": {"_": " "}}},
+        'len_restrict': {'category_name': {'min': 2, 'max': None}},
+        'data_types': {'category_id': 'text',
+                       'category_name': 'text'},
+        'ref_integrity': {'product': {'field': 'category_id',
+                                      'field_ref': 'category_id',
+                                      'conn_ref': conn_info['product']['from']}}
 
-
-
+В случае с таблицей "category", проверка качества реализована так:
+Обработка пропусков ("missing"): пропуск по "category_id" приводит к удалению строки, пропуски по полю "category_name", заполоняются значением "Категория не определена".
+Обработка дубликатов: дублем считается строка, совпадающая по полю "category_id".
+Обработка шумов ("noise"): значения поля "category_name" проверяются регулярным выражением "_". Некорректное знеачение "_" заменяется на " ".
+Обработка длины значений ("len_restrict"): значение по полю "category_name" будет залоггировано в случае, если его длина  < 2.
+Обработка типов данных ("data_types"): значения полей "category_id" и "category_name" проверяются на соответсвие типу данных text.
+Обеспечение ссылочной целостности ("ref_integrity"): из таблицы "product" в таблицу "category" добавляются значения поля "category_id", отсутствующие в таблице "category" и присутствующие в таблице "product".
 
 
 
