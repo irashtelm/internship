@@ -126,16 +126,21 @@ class DataQuality:
             regex = self.error_handling['noise'][field]['regex']
             match_replace = self.error_handling['noise'][field]['match_replace']
             mask = self.data[field].str.contains(regex)
-            mask.replace(np.nan, True, inplace=True)
+            mask.replace(np.nan, False, inplace=True)
+
             if match_replace:
-                clean_field = self.data[~mask][field].apply((lambda x:
-                                                             DataQuality.multiple_replace(x, match_replace)))
-                self.data.loc[~mask, field] = clean_field
+                clean_field = self.data[mask][field].apply((lambda x:
+                                                            DataQuality.multiple_replace(x, match_replace)))
+                self.data.loc[mask, field] = clean_field
             else:
                 noises_data = pd.concat([noises_data, self.data[mask]])
         noises_data.drop_duplicates(inplace=True)
         noises_data["noises"] = True
         self.incorrect_data = pd.concat([self.incorrect_data, noises_data])
+
+        if 'category_name' in self.data.columns and len(self.data.columns) == 2:
+            print("THERE")
+            print(self.data.to_string())
 
     def missing_values_check(self):
         """
@@ -147,7 +152,6 @@ class DataQuality:
         missing_handling = self.error_handling['missing']
         mask = self.data[missing_handling['drop']].isnull().any(axis=1)
         self.data = self.data[~mask]
-        print(self.data.tail())
         for field in missing_handling['fill']:
             self.data[field].replace('nan', missing_handling['fill'][field], inplace=True)
             self.data.loc[:, field] = self.data[field].fillna(missing_handling['fill'][field])
@@ -161,12 +165,21 @@ class DataQuality:
         Устраняются дублирующиеся по указанному набору полей значения.
         Некорректные данные логгируются.
         """
-        mask = (self.data.duplicated(subset=self.error_handling['duplicate'], keep=False))
+
+        if 'duplicate_log' in self.error_handling:
+            for fields in self.error_handling['duplicate_log']:
+                mask = (self.data[fields].duplicated(keep=False))
+                duplicates = self.data[mask]
+                duplicates["duplicates_check"] = True
+
+        fields = self.error_handling['duplicate']
+        mask = (self.data.duplicated(subset=fields, keep=False))
         duplicates = self.data[mask]
         duplicates["duplicates_check"] = True
+
         self.incorrect_data = pd.concat([self.incorrect_data, duplicates])
         self.incorrect_data.drop_duplicates(inplace=True)
-        self.data.drop_duplicates(subset=self.error_handling['duplicate'], inplace=True)
+        self.data.drop_duplicates(subset=fields, inplace=True)
 
     def data_types_check(self):
         """
@@ -195,6 +208,7 @@ class DataQuality:
         В проверяемую таблицу добавляются те строки по указанному полю,
         которые отсутствуют в проверяемом наборе данных, но присутствуют в связанном.
         """
+
         ref_integrity = self.error_handling['ref_integrity']
         complements = pd.DataFrame(columns=self.data.columns)
         for table_ref in ref_integrity:
@@ -203,8 +217,11 @@ class DataQuality:
                                                         right_on=ref_integrity[table_ref]['field'],
                                                         how='left',
                                                         indicator=True)
+
             complement = data_union[data_union['_merge'] == 'left_only'].drop('_merge', axis=1)
-            complement.replace(np.nan, '', inplace=True)
+            replace_value = ''
+            complement.replace('nan', replace_value, inplace=True)
+            complement.replace(np.nan, replace_value, inplace=True)
             complements = pd.concat([complements, complement])
 
         if not complements.empty:
@@ -256,6 +273,9 @@ class DataQuality:
         self.clear_data()
         if 'noise' in self.error_handling:
             self.noise_restricts_check()
+        if 'category_name' in self.data.columns and len(self.data.columns) == 2:
+            print("THERE")
+            print(self.data.to_string())
         self.data_types_check()
         self.missing_values_check()
         self.duplicates_check()
@@ -313,7 +333,7 @@ def data_quality(conn_from,
 
 
 # Параметры подключения и хранения данных
-conn_info_to = {'conn_id': 'dds_id', 'schema': 'dds'}  # {'conn_id': 'dds_id', 'schema': 'dds'}
+conn_info_to = {'conn_id': 'dds_id', 'schema': 'dds'}  # {'conn_id': 'dds_id', 'schema': 'dds_dev'}
 conn_info = {
     'brand': {'from': {'conn_id': 'sources_id', 'schema': 'sources'}, 'to': conn_info_to},
     'category': {'from': {'conn_id': 'sources_id', 'schema': 'sources'}, 'to': conn_info_to},
@@ -503,7 +523,8 @@ len_restrict_check text
 error_handling = {
     'brand': {
         'missing': {'drop': ['brand_id'],
-                    'fill': {'brand': 'Бренд не определён'}},
+                    'fill': {'brand': 'Бренд не определён'},
+                    'fill_ref': {'brand_id': '-1'}},
         'duplicate': ['brand_id'],
         'noise': {'brand': {"regex": "═", "match_replace": {"═": " "}}},
         'len_restrict': {'brand': {'min': 2, 'max': None}},
@@ -515,7 +536,8 @@ error_handling = {
     },
     'category': {
         'missing': {'drop': ['category_id'],
-                    'fill': {'category_name': 'Категория не определена'}},
+                    'fill': {'category_name': 'Категория не определена'},
+                    'fill_ref': {'category_id': '-1'}},
         'duplicate': ['category_id'],
         'noise': {'category_name': {"regex": "_", "match_replace": {"_": " "}}},
         'len_restrict': {'category_name': {'min': 2, 'max': None}},
@@ -531,6 +553,7 @@ error_handling = {
                              'category_id': '-1',
                              'brand_id': '-1'}},
         'duplicate': ['product_id'],
+        'duplicate_log': [['name_short', 'brand_id']],
         'noise': {'name_short': {"regex": "^[0-9]*$", "match_replace": None},
                   'product_id': {"regex": "^[a-zA-Z]*$", "match_replace": None}},
         'len_restrict': {'name_short': {'min': 2, 'max': None}},
@@ -585,7 +608,8 @@ error_handling = {
     },
     'stores': {
         'missing': {'drop': ['pos'],
-                    'fill': {'pos_name': 'Магазин не определён'}},
+                    'fill': {'pos_name': 'Магазин не определён'},
+                    'fill_ref': {'pos': '-1'}},
         'duplicate': ['pos'],
         'len_restrict': {'pos_name': {'min': 2, 'max': None}},
         'data_types': {'pos': 'text',
