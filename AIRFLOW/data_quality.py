@@ -138,10 +138,6 @@ class DataQuality:
         noises_data["noises"] = True
         self.incorrect_data = pd.concat([self.incorrect_data, noises_data])
 
-        if 'category_name' in self.data.columns and len(self.data.columns) == 2:
-            print("THERE")
-            print(self.data.to_string())
-
     def missing_values_check(self):
         """
         Устраняет из набора данных все строки если пусто
@@ -273,9 +269,6 @@ class DataQuality:
         self.clear_data()
         if 'noise' in self.error_handling:
             self.noise_restricts_check()
-        if 'category_name' in self.data.columns and len(self.data.columns) == 2:
-            print("THERE")
-            print(self.data.to_string())
         self.data_types_check()
         self.missing_values_check()
         self.duplicates_check()
