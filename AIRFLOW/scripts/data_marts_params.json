@@ -1,0 +1,101 @@
+{
+  "conn_info": {
+    "from": {"conn_id": "dds_id", "schema": "dds"},
+    "to": {"conn_id": "dm_id", "schema": "datamarts"}
+  },
+  "marts": {
+    "orders_data": {"join_info": {
+      "source": "transaction",
+      "joined_tables": [
+        {"table": "transaction_stores",
+          "how": "inner",
+          "left_on": ["transaction_transaction_id"],
+          "right_on": ["transaction_stores_transaction_id"],
+          "cast": null},
+        {"table": "stores",
+          "how": "inner",
+          "left_on": ["transaction_stores_pos"],
+          "right_on": ["stores_pos"],
+          "cast": null},
+        {"table": "product",
+          "how": "inner",
+          "left_on": ["transaction_product_id"],
+          "right_on": ["product_product_id"],
+          "cast": null},
+        {"table": "stock",
+          "how": "inner",
+          "left_on": ["transaction_product_id", "transaction_recorded_on_cast", "transaction_stores_pos"],
+          "right_on": ["stock_product_id", "stock_available_on", "stock_pos"],
+          "cast": {"transaction_recorded_on": "date"}},
+        {"table": "category",
+          "how": "inner",
+          "left_on": ["product_category_id"],
+          "right_on": ["category_category_id"],
+          "cast": null},
+        {"table": "brand",
+          "how": "inner",
+          "left_on": ["product_brand_id"],
+          "right_on": ["brand_brand_id"],
+          "cast": null}
+      ]
+    },
+      "column_names": {
+        "transaction_transaction_id": "Идентификатор транзакции",
+        "transaction_recorded_on": "Дата и время транзакции",
+        "product_product_id": "Идентификатор товара",
+        "stores_pos_name": "Название магазина",
+        "product_name_short": "Короткое наименование товара",
+        "transaction_quantity": "Количество товара в транзакции в штуках",
+        "transaction_price": "Цена за товар в транзакции после скидки",
+        "transaction_price_full": "Цена за товар в транзакции до скидки",
+        "stock_cost_per_item": "Закупочная цена товара",
+        "order_amount": "Сумма заказа в рублях",
+        "order_amount_full_price": "Сумма заказа в рублях по full_price",
+        "transaction_order_type_id": "Идентификатор типа заказа",
+        "category_category_name": "Название категории",
+        "brand_brand": "Название бренда",
+        "update_date": "Дата последнего обновления",
+        "load_id": "Идентификатор процесса загрузки"}
+    },
+    "stock_data": {"join_info": {
+      "source": "stock",
+      "joined_tables": [
+        {"table": "stores",
+          "how": "inner",
+          "left_on": ["stock_pos"],
+          "right_on": ["stores_pos"],
+          "cast": null},
+        {"table": "product",
+          "how": "inner",
+          "left_on": ["stock_product_id"],
+          "right_on": ["product_product_id"],
+          "cast": null},
+        {"table": "category",
+          "how": "inner",
+          "left_on": ["product_category_id"],
+          "right_on": ["category_category_id"],
+          "cast": null},
+        {"table": "brand",
+          "how": "inner",
+          "left_on": ["product_brand_id"],
+          "right_on": ["brand_brand_id"],
+          "cast": null}
+      ]
+    },
+      "column_names": {
+        "stock_available_on": "Идентификатор транзакции",
+        "stock_product_id": "Идентификатор товара",
+        "product_name_short": "Короткое наименование товара",
+        "stock_pos": "Идентификатор магазина",
+        "stores_pos_name": "Название магазина",
+        "stock_available_quantity": "Доступное количество товара",
+        "stock_cost_per_item": "Закупочная цена товара",
+        "available_amount": "Сумма доступного остатка в рублях",
+        "category_category_name": "Название категории",
+        "brand_brand": "Название бренда",
+        "update_date": "Дата последнего обновления",
+        "load_id": "Идентификатор процесса загрузки"
+      }
+    }
+  }
+}
