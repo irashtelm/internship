@@ -68,7 +68,7 @@ def calculate_statistics(mart, data):
 
 dm_params_path = os.path.expanduser("/opt/airflow/scripts/data_marts_params.json")
 
-# Параметры подключения и проверки качества данных
+# Параметры подключения и создания витрин данных
 with open(dm_params_path, 'r', encoding="utf-8") as json_file:
     dm_params = json.load(json_file)
 
