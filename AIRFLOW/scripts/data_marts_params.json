@@ -40,22 +40,21 @@
       ]
     },
       "column_names": {
-        "transaction_transaction_id": "Идентификатор транзакции",
+        "transaction_transaction_id": "ID транзакции",
         "transaction_recorded_on": "Дата и время транзакции",
-        "product_product_id": "Идентификатор товара",
-        "stores_pos_name": "Название магазина",
-        "product_name_short": "Короткое наименование товара",
-        "transaction_quantity": "Количество товара в транзакции в штуках",
-        "transaction_price": "Цена за товар в транзакции после скидки",
-        "transaction_price_full": "Цена за товар в транзакции до скидки",
-        "stock_cost_per_item": "Закупочная цена товара",
-        "order_amount": "Сумма заказа в рублях",
-        "order_amount_full_price": "Сумма заказа в рублях по full_price",
-        "transaction_order_type_id": "Идентификатор типа заказа",
-        "category_category_name": "Название категории",
-        "brand_brand": "Название бренда",
+        "stores_pos_name": "Магазин",
+        "product_name_short": "Товар",
+        "transaction_quantity": "Количество товара, шт.",
+        "transaction_price": "Цена товара после скидки, руб.",
+        "transaction_price_full": "Цена товара до скидки, руб.",
+        "stock_cost_per_item": "Закупочная цена товара, руб.",
+        "order_amount": "Сумма заказа после скидки, руб.",
+        "order_amount_full_price": "Сумма заказа до скидки, руб.",
+        "transaction_order_type_id": "Тип заказа",
+        "category_category_name": "Категория",
+        "brand_brand": "Бренд",
         "update_date": "Дата последнего обновления",
-        "load_id": "Идентификатор процесса загрузки"}
+        "load_id": "ID процесса загрузки"}
     },
     "stock_data": {"join_info": {
       "source": "stock",
@@ -83,18 +82,16 @@
       ]
     },
       "column_names": {
-        "stock_available_on": "Идентификатор транзакции",
-        "stock_product_id": "Идентификатор товара",
-        "product_name_short": "Короткое наименование товара",
-        "stock_pos": "Идентификатор магазина",
-        "stores_pos_name": "Название магазина",
-        "stock_available_quantity": "Доступное количество товара",
-        "stock_cost_per_item": "Закупочная цена товара",
-        "available_amount": "Сумма доступного остатка в рублях",
-        "category_category_name": "Название категории",
-        "brand_brand": "Название бренда",
+        "stock_available_on": "Дата наличия товара",
+        "stores_pos_name": "Магазин",
+        "product_name_short": "Товар",
+        "stock_available_quantity": "Доступное количество товара, шт.",
+        "stock_cost_per_item": "Закупочная цена товара, руб.",
+        "available_amount": "Сумма доступного остатка, руб.",
+        "category_category_name": "Категория",
+        "brand_brand": "Бренд",
         "update_date": "Дата последнего обновления",
-        "load_id": "Идентификатор процесса загрузки"
+        "load_id": "ID процесса загрузки"
       }
     }
   }
