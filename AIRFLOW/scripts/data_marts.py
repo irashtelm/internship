@@ -2,6 +2,7 @@
 import json
 import os
 from datetime import datetime
+from decimal import Decimal
 
 from data_quality import DataQuality as Dq
 
@@ -60,15 +61,18 @@ def formation_data(calculate_new_col):
 @formation_data
 def calculate_statistics(mart, data):
     if mart == 'orders_data':
-        data['order_amount'] = data['transaction_quantity'] * data['transaction_price']
-        data['order_amount_full_price'] = data['transaction_quantity'] * data['transaction_price_full']
+        data['order_amount'] = data['transaction_quantity'].astype(str).apply(Decimal) * \
+                               data['transaction_price'].astype(str).apply(Decimal)
+        data['order_amount_full_price'] = data['transaction_quantity'].astype(str).apply(Decimal) * \
+                                          data['transaction_price_full'].astype(str).apply(Decimal)
     elif mart == 'stock_data':
-        data['available_amount'] = data['stock_available_quantity'] * data['stock_cost_per_item']
+        data['available_amount'] = data['stock_available_quantity'].astype(str).apply(Decimal) * \
+                                   data['stock_cost_per_item'].astype(str).apply(Decimal)
 
 
 dm_params_path = os.path.expanduser("/opt/airflow/scripts/data_marts_params.json")
 
-# Параметры подключения и создания витрин данных
+# Параметры подключения и проверки качества данных
 with open(dm_params_path, 'r', encoding="utf-8") as json_file:
     dm_params = json.load(json_file)
 
