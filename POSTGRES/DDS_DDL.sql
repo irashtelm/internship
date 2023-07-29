@@ -52,8 +52,21 @@ CREATE TABLE dds.transaction (
 	CONSTRAINT fk_transaction_product FOREIGN KEY (product_id) REFERENCES product (product_id)
 );
 
+CREATE TABLE dds.product_quantity (
+	product_id integer PRIMARY KEY,
+	min_quantity numeric,
+	CONSTRAINT fk_product_quantity_product FOREIGN KEY (product_id) REFERENCES product (product_id)
+);
+
+CREATE TABLE dds.stores_emails (
+	pos text PRIMARY KEY,
+	email text,
+	CONSTRAINT fk_stores_emails_stores FOREIGN KEY (pos) REFERENCES stores (pos)
+);
+
 -- Создание журналов событий
 CREATE SCHEMA data_quality;
+
 CREATE TABLE data_quality.brand_log (
 	brand_id text,
 	brand text,
@@ -147,6 +160,23 @@ CREATE TABLE data_quality.transaction_log (
 	value_restrict_check text,
 	len_restrict_check text,
 	ref_integrity_check text
+);
+
+CREATE TABLE data_quality.product_quantity_log (
+	product_id text ,
+	min_quantity text ,
+	noises text NULL,
+	missing_values_check text NULL,
+	duplicates_check text NULL,
+	data_types_check text NULL,
+	value_restrict_check text NULL,
+	len_restrict_check text NULL,
+	ref_integrity_check text NULL
+);
+
+CREATE TABLE data_quality.stores_emails_log (
+	pos text,
+	email text
 );
 
 CREATE TABLE data_quality.upload_tables_tech (

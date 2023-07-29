@@ -1,24 +1,25 @@
 """Подключение необходимых библиотек."""
 from datetime import datetime
+from typing import Union, List, Dict
 
 import data_quality as dq
-from airflow import AirflowException
-from airflow import DAG
+from airflow import AirflowException, DAG
+from airflow.operators.empty import EmptyOperator
 from airflow.operators.python import PythonOperator
 from airflow.providers.postgres.hooks.postgres import PostgresHook
 from airflow.providers.postgres.operators.postgres import PostgresOperator
-from airflow.operators.dagrun_operator import TriggerDagRunOperator
 
 
-def data_upload_dag(table,
-                    conn_info,
-                    logs,
-                    error_handling):
+def data_upload_dag(table: str,
+                    conn_info: Union[List[Dict], Dict[str, Dict]],
+                    logs: dict,
+                    error_handling: Dict[str, Dict]) -> None:
     """
-    Считывает конфигурации и параметры подключения к БД и запускает проверку качества данных таблицы.
-    :param table: наименование таблицы
-    :param conn_info: конфигурационные сведения
-    :param logs: параметры логгирования.
+    Считывает конфигурации и параметры подключения к БД
+    и запускает проверку качества данных таблицы.
+    :param table: наименование таблицы.
+    :param conn_info: конфигурационные сведения.
+    :param logs: параметры журнала событий.
     :param error_handling: параметры проверки качества данных.
     """
     try:
@@ -38,9 +39,10 @@ def data_upload_dag(table,
         raise AirflowException(f"ERROR: {error}") from error
 
 
-with DAG('data_upload', description="",
-         schedule_interval="@once",  # @daily
-         start_date=datetime(2023, 7, 23),
+with DAG('sources_to_dds',
+         description="Загрузка данных со слоя sources на слой dds",
+         schedule_interval="0 0 * * *",
+         start_date=datetime(2023, 7, 1),
          catchup=False,
          tags=["etl-process"]) as dag:
 
@@ -65,9 +67,12 @@ with DAG('data_upload', description="",
                                      python_callable=data_upload_dag,
                                      op_kwargs={
                                          'table': 'category',
-                                         'conn_info': dq.dq_params['conn_info'],
-                                         'logs': dq.dq_params['log_info']['tables']['category'],
-                                         'error_handling': dq.dq_params['error_handling']['category']
+                                         'conn_info':
+                                             dq.dq_params['conn_info'],
+                                         'logs':
+                                             dq.dq_params['log_info']['tables']['category'],
+                                         'error_handling':
+                                             dq.dq_params['error_handling']['category']
                                      }
                                      )
 
@@ -82,6 +87,21 @@ with DAG('data_upload', description="",
                                    }
                                    )
 
+    stores_emails_upload = PythonOperator(task_id="stores_emails_upload",
+                                          trigger_rule="all_success",
+                                          python_callable=data_upload_dag,
+                                          op_kwargs={
+                                              'table':
+                                                  'stores_emails',
+                                              'conn_info':
+                                                  dq.dq_params['conn_info'],
+                                              'logs':
+                                                  dq.dq_params['log_info']['tables']['stores_emails'],
+                                              'error_handling':
+                                                  dq.dq_params['error_handling']['stores_emails']
+                                          }
+                                          )
+
     product_upload = PythonOperator(task_id="product_upload",
                                     trigger_rule="all_success",
                                     python_callable=data_upload_dag,
@@ -93,16 +113,33 @@ with DAG('data_upload', description="",
                                     }
                                     )
 
+    product_quantity_upload = PythonOperator(task_id="product_quantity_upload",
+                                             trigger_rule="all_success",
+                                             python_callable=data_upload_dag,
+                                             op_kwargs={
+                                                 'table':
+                                                     'product_quantity',
+                                                 'conn_info':
+                                                     dq.dq_params['conn_info'],
+                                                 'logs':
+                                                     dq.dq_params['log_info']['tables']['product_quantity'],
+                                                 'error_handling':
+                                                     dq.dq_params['error_handling']['product_quantity']
+                                             }
+                                             )
+
     transaction_stores_upload = PythonOperator(task_id="transaction_stores_upload",
                                                trigger_rule="all_success",
                                                python_callable=data_upload_dag,
                                                op_kwargs={
-                                                   'table': 'transaction_stores',
-                                                   'conn_info': dq.dq_params['conn_info'],
-                                                   'logs': dq.dq_params['log_info'] \
-                                                       ['tables']['transaction_stores'],
-                                                   'error_handling': dq.dq_params['error_handling'] \
-                                                       ['transaction_stores']
+                                                   'table':
+                                                       'transaction_stores',
+                                                   'conn_info':
+                                                       dq.dq_params['conn_info'],
+                                                   'logs':
+                                                       dq.dq_params['log_info']['tables']['transaction_stores'],
+                                                   'error_handling':
+                                                       dq.dq_params['error_handling']['transaction_stores']
                                                }
                                                )
 
@@ -121,21 +158,26 @@ with DAG('data_upload', description="",
                                         trigger_rule="all_success",
                                         python_callable=data_upload_dag,
                                         op_kwargs={
-                                            'table': 'transaction',
-                                            'conn_info': dq.dq_params['conn_info'],
-                                            'logs': dq.dq_params['log_info']['tables']['transaction'],
-                                            'error_handling': dq.dq_params['error_handling']['transaction']
+                                            'table':
+                                                'transaction',
+                                            'conn_info':
+                                                dq.dq_params['conn_info'],
+                                            'logs':
+                                                dq.dq_params['log_info']['tables']['transaction'],
+                                            'error_handling':
+                                                dq.dq_params['error_handling']['transaction']
                                         }
                                         )
-
-    run_data_upload_to_dm = TriggerDagRunOperator(task_id='run_data_upload_to_dm',
-                                                  trigger_rule="all_success",
-                                                  trigger_dag_id='data_upload_to_dm')
+    # фиксация успешного завершения исполнения всех предыдущих задач
+    end_upload = EmptyOperator(task_id='end_upload',
+                               trigger_rule="all_success",)
 
     remove_all_data >> [brand_upload, category_upload, stores_upload]
     [brand_upload, category_upload] >> product_upload
-    stores_upload >> [transaction_stores_upload, stock_upload]
-    product_upload >> [stock_upload, transaction_upload]
+    stores_upload >> [transaction_stores_upload, stock_upload, stores_emails_upload]
+    product_upload >> [product_quantity_upload, stock_upload, transaction_upload]
     transaction_stores_upload >> transaction_upload
-    stock_upload >> run_data_upload_to_dm
-    transaction_upload >> run_data_upload_to_dm
+    stores_emails_upload >> end_upload
+    stock_upload >> end_upload
+    transaction_upload >> end_upload
+    product_quantity_upload >> end_upload

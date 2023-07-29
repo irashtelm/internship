@@ -16,6 +16,10 @@
 			"from": {"conn_id": "dds_id", "schema": "sources"},
 			"to": {"conn_id": "dds_id", "schema": "dds"}
 		},
+		"product_quantity": {
+			"from": {"conn_id": "dds_id", "schema": "sources"},
+			"to": {"conn_id": "dds_id", "schema": "dds"}
+		},
 		"product": {
 			"from": {"conn_id": "sources_id", "schema": "sources"},
 			"to": {"conn_id": "dds_id", "schema": "dds"}
@@ -31,6 +35,10 @@
 		"transaction": {
 			"from": {"conn_id": "sources_id", "schema": "sources"},
 			"to": {"conn_id": "dds_id", "schema": "dds"}
+		},
+		"stores_emails": {
+			"from": {"conn_id": "dds_id", "schema": "sources"},
+			"to": {"conn_id": "dds_id", "schema": "dds"}
 		}
 	}
 },
@@ -40,10 +48,12 @@
 		"brand": {"table_log": "brand_log", "schema": "data_quality"},
 		"category": {"table_log": "category_log", "schema": "data_quality"},
 		"stores": {"table_log": "stores_log", "schema": "data_quality"},
+		"product_quantity": {"table_log": "product_quantity_log", "schema": "data_quality"},
 		"product": {"table_log": "product_log", "schema": "data_quality"},
 		"transaction_stores": {"table_log": "transaction_stores_log", "schema": "data_quality"},
 		"stock": {"table_log": "stock_log", "schema": "data_quality"},
-		"transaction": {"table_log": "transaction_log", "schema": "data_quality"}
+		"transaction": {"table_log": "transaction_log", "schema": "data_quality"},
+		"stores_emails": {"table_log": "stores_emails_log", "schema": "data_quality"}
 	}
 },
 "error_handling": {
@@ -202,6 +212,46 @@
 		},
 		"ref_integrity": null,
 		"val_restrict": null
-    }
+    },
+    "product_quantity": {
+        "missing": {
+			"drop": ["product_id"],
+			"fill": {"min_quantity": 1}
+		},
+        "duplicate": {
+			"drop": ["product_id"],
+			"log": [["product_id"]]
+		},
+        "noise": null,
+        "len_restrict": null,
+        "data_types": {
+			"product_id": "integer",
+			"min_quantity": "numeric"
+		},
+        "ref_integrity": {
+			"product": {"fields": ["product_id"], "fields_ref": ["product_id"]}
+		},
+		"val_restrict": null
+	},
+    "stores_emails": {
+        "missing": {
+			"drop": ["pos"],
+			"fill": null
+		},
+        "duplicate": {
+			"drop": ["pos"],
+			"log": [["pos"]]
+		},
+        "noise": null,
+        "len_restrict": null,
+        "data_types": {
+			"pos": "text",
+			"email": "text"
+		},
+        "ref_integrity": {
+			"stores": {"fields": ["pos"], "fields_ref": ["pos"]}
+		},
+		"val_restrict": null
+	}
 }
 }

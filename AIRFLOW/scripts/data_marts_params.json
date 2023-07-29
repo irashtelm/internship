@@ -4,39 +4,50 @@
     "to": {"conn_id": "dm_id", "schema": "datamarts"}
   },
   "marts": {
-    "orders_data": {"join_info": {
-      "source": "transaction",
+    "orders_data": {
+      "conn_info": {
+        "from": {"conn_id": "dds_id", "schema": "dds"},
+        "to": {"conn_id": "dm_id", "schema": "datamarts"}
+      },
+      "join_info": {
+      "source": {"table": "transaction", "rename": true},
       "joined_tables": [
         {"table": "transaction_stores",
           "how": "inner",
           "left_on": ["transaction_transaction_id"],
           "right_on": ["transaction_stores_transaction_id"],
-          "cast": null},
+          "cast": null,
+          "rename": true},
         {"table": "stores",
           "how": "inner",
           "left_on": ["transaction_stores_pos"],
           "right_on": ["stores_pos"],
-          "cast": null},
+          "cast": null,
+          "rename": true},
         {"table": "product",
           "how": "inner",
           "left_on": ["transaction_product_id"],
           "right_on": ["product_product_id"],
-          "cast": null},
+          "cast": null,
+          "rename": true},
         {"table": "stock",
           "how": "inner",
           "left_on": ["transaction_product_id", "transaction_recorded_on_cast", "transaction_stores_pos"],
           "right_on": ["stock_product_id", "stock_available_on", "stock_pos"],
-          "cast": {"transaction_recorded_on": "date"}},
+          "cast": {"transaction_recorded_on": "date"},
+          "rename": true},
         {"table": "category",
           "how": "inner",
           "left_on": ["product_category_id"],
           "right_on": ["category_category_id"],
-          "cast": null},
+          "cast": null,
+          "rename": true},
         {"table": "brand",
           "how": "inner",
           "left_on": ["product_brand_id"],
           "right_on": ["brand_brand_id"],
-          "cast": null}
+          "cast": null,
+          "rename": true}
       ]
     },
       "column_names": {
@@ -57,29 +68,50 @@
         "update_date": "Дата последнего обновления",
         "load_id": "ID процесса загрузки"}
     },
-    "stock_data": {"join_info": {
-      "source": "stock",
+    "stock_data": {
+      "conn_info": {
+        "from": {"conn_id": "dds_id", "schema": "dds"},
+        "to": {"conn_id": "dm_id", "schema": "datamarts"}
+      },
+      "join_info": {
+      "source": {"table": "stock", "rename": true},
       "joined_tables": [
         {"table": "stores",
           "how": "inner",
           "left_on": ["stock_pos"],
           "right_on": ["stores_pos"],
-          "cast": null},
+          "cast": null,
+          "rename": true},
         {"table": "product",
           "how": "inner",
           "left_on": ["stock_product_id"],
           "right_on": ["product_product_id"],
-          "cast": null},
+          "cast": null,
+          "rename": true},
         {"table": "category",
           "how": "inner",
           "left_on": ["product_category_id"],
           "right_on": ["category_category_id"],
-          "cast": null},
+          "cast": null,
+          "rename": true},
         {"table": "brand",
           "how": "inner",
           "left_on": ["product_brand_id"],
           "right_on": ["brand_brand_id"],
-          "cast": null}
+          "cast": null,
+          "rename": true},
+        {"table": "product_quantity",
+          "how": "inner",
+          "left_on": ["stock_product_id"],
+          "right_on": ["product_quantity_product_id"],
+          "cast": null,
+          "rename": true},
+        {"table": "stores_emails",
+          "how": "inner",
+          "left_on": ["stock_pos"],
+          "right_on": ["stores_emails_pos"],
+          "cast": null,
+          "rename": true}
       ]
     },
       "column_names": {
@@ -92,6 +124,27 @@
         "available_amount": "Сумма доступного остатка, руб.",
         "category_category_name": "Категория",
         "brand_brand": "Бренд",
+        "update_date": "Дата последнего обновления",
+        "load_id": "ID процесса загрузки"
+      }
+    },
+    "stores_data": {
+      "conn_info": {
+        "from": {"conn_id": "dm_id", "schema": "datamarts"},
+        "to": {"conn_id": "dm_id", "schema": "datamarts"}
+      },
+      "join_info": {
+      "source": {"table": "stock_data", "rename": null},
+      "joined_tables": null
+    },
+      "column_names": {
+        "stores_pos_name": "Магазин",
+        "stores_emails_email": "Электронная почта магазина",
+        "product_product_id": "ID товара",
+        "product_name_short": "Товар",
+        "stock_available_on": "Дата наличия товара",
+        "stock_available_quantity": "Доступное количество товара, шт.",
+        "product_quantity_min_quantity": "Минимальное количество товара, шт.",
         "update_date": "Дата последнего обновления",
         "load_id": "ID процесса загрузки"
       }
