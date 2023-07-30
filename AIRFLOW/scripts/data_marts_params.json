@@ -53,6 +53,7 @@
       "column_names": {
         "transaction_transaction_id": "ID транзакции",
         "transaction_recorded_on": "Дата и время транзакции",
+        "stores_pos": "ID магазина",
         "stores_pos_name": "Магазин",
         "transaction_product_id": "ID товара",
         "product_name_short": "Товар",
@@ -63,6 +64,7 @@
         "order_amount": "Сумма заказа после скидки, руб.",
         "order_amount_full_price": "Сумма заказа до скидки, руб.",
         "transaction_order_type_id": "Тип заказа",
+        "category_category_id": "ID категории",
         "category_category_name": "Категория",
         "brand_brand": "Бренд",
         "update_date": "Дата последнего обновления",
@@ -116,12 +118,14 @@
     },
       "column_names": {
         "stock_available_on": "Дата наличия товара",
+        "stores_pos": "ID магазина",
         "stores_pos_name": "Магазин",
         "stock_product_id": "ID товара",
         "product_name_short": "Товар",
         "stock_available_quantity": "Доступное количество товара, шт.",
         "stock_cost_per_item": "Закупочная цена товара, руб.",
         "available_amount": "Сумма доступного остатка, руб.",
+        "category_category_id": "ID категории",
         "category_category_name": "Категория",
         "brand_brand": "Бренд",
         "update_date": "Дата последнего обновления",
@@ -138,10 +142,12 @@
       "joined_tables": null
     },
       "column_names": {
+        "stores_pos": "ID магазина",
         "stores_pos_name": "Магазин",
         "stores_emails_email": "Электронная почта магазина",
         "product_product_id": "ID товара",
         "product_name_short": "Товар",
+        "category_category_id": "ID категории",
         "stock_available_on": "Дата наличия товара",
         "stock_available_quantity": "Доступное количество товара, шт.",
         "product_quantity_min_quantity": "Минимальное количество товара, шт.",

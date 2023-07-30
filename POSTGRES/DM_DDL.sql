@@ -63,10 +63,12 @@ CREATE TABLE datamarts.stock_data (
 CREATE TABLE datamarts.stores_data (
 	update_date timestamp DEFAULT CURRENT_TIMESTAMP,
 	load_id integer,
+	stores_pos text,
 	stores_pos_name text,
 	stores_emails_email text,
 	product_product_id integer,
 	product_name_short text,
+	category_category_id text,
 	stock_available_on date,
 	stock_available_quantity numeric,
 	product_quantity_min_quantity numeric
