@@ -225,10 +225,11 @@ class CreateMarts:
         emails = self.data_marts_params['column_names']['stores_emails_email']
         # отправка данных по каждому магазину
         for email in data[emails].unique():
-            data = data[['Магазин', 'ID товара', 'Товар', 'Дата наличия товара',
-                         'Доступное количество товара, шт.', 'Минимальное количество товара, шт.']]
+            data_send = data[data[emails] == email]
+            data_send = data_send[['Магазин', 'ID товара', 'Товар', 'Дата наличия товара',
+                                   'Доступное количество товара, шт.', 'Минимальное количество товара, шт.']]
             CreateMarts.send_message(subject="Товары с остатком ниже минимально допустимого",
-                                     body=data,
+                                     body=data_send,
                                      sender=self.email_info['sender'],
                                      password=self.email_info['password'],
                                      recipient=email)
