@@ -41,16 +41,20 @@
 Первый набор python-скриптов, предназначенный для трансформации, очистки и загрузки исходных "сырых" данных, содержит DAG, запускающий процедуры
 проверки качества загружаемых данных и их преобразования, и файл с классом проверки качества данных и процедурами загрузки и обработки данных.
 
-DAG запускает исполнение 10 тасок. При этом, параллельное исполнение всех тасок нереализуемо в виду наличия ограничений на ссылочную целостность
-связанных таблиц. Поэтому реализована следующая последовательность исполнения тасок.
+DAG запускает исполнение 11 тасок. При этом, параллельное исполнение всех тасок нереализуемо в виду наличия ограничений на ссылочную целостность
+связанных таблиц. Поэтому реализована следующая последовательность исполнения тасок:
 
-![image](https://github.com/asetimankulov/internship/assets/98170451/7d236256-0c15-451c-b75a-10fd6b6a9bc1)
+
+
+![image](https://github.com/asetimankulov/internship/assets/98170451/631dce83-f961-49c1-99c1-703f14c922ce)
+
+
 
 где:
 * start_step и end_step - операторы, ничего не исполняющие.
-* layer_recreation - оператор Postgres, пересоздающий весь слой DDS (удаление схем со всеми объектами и последующее их создание).
-* brand_upload, category_upload, stores_upload, product_upload, transaction_stores_upload, stock_upload, transaction_upload - операторы Python,
-исполняющие процедуры проверки качества соответствующих таблиц.
+* remove_all_data - оператор Postgres, очищающий все таблицы на слое DDS.
+* brand_upload, category_upload, stores_upload, product_upload, transaction_stores_upload, product_quantity_upload, stock_upload, stores_emails_uload, transaction_upload - операторы Python, исполняющие процедуры проверки качества соответствующих таблиц.
+
 
 Модуль data_quality содержит класс проверки данных таблицы по различным критериям качества данных.
 Класс содержит следующие методы проверки качества данных:
@@ -62,23 +66,42 @@ DAG запускает исполнение 10 тасок. При этом, па
 * duplicates_check - устранение дубликатов по всем полям или первичному ключу. Некорректные данные логгируются.
 * value_restrict_check - проверяет соответствие значения указанного поля таблицы некоторым ограничениям. Результат несоответствия логгируется.
 * len_restricts_check - проверяет длину указанного поля и логгирует те строки, которые нарушают ограничение.
-* ref_integrity - проверка, предназначенная для сохранения ссылочной целостности. В родительские таблицы, перед их загрузкой, добавляются отсутствующие в них, но имеющиеся в их дочерних таблицах значения.
+* ref_integrity - проверка, устраняющая из проверяемой таблицы те строки по указанному полю, которые отсутствуют в связанном наборе данных.
 
 Для каждой таблицы сформированы свои требования к качеству данных. Хранение набора параметров для каждой таблицы реализовано следующим образом:
 
-    'category': {
-        'missing': {'drop': ['category_id'],
-                    'fill': {'category_name': 'Категория не определена'}},
-        'duplicate': ['category_id'],
-        'noise': {'category_name': {"regex": "_", "match_replace": {"_": " "}}},
-        'len_restrict': {'category_name': {'min': 2, 'max': None}},
-        'data_types': {'category_id': 'text',
-                       'category_name': 'text'},
-        'ref_integrity': {'product': {'field': 'category_id',
-                                      'field_ref': 'category_id',
-                                      'conn_ref': conn_info['product']['from']}}
+    "transaction": {
+        "missing": {
+			"drop": ["transaction_id", "product_id", "recorded_on", "quantity", "price", "price_full", "price"],
+			"fill": null
+		},
+        "duplicate": {
+			"drop": ["transaction_id", "product_id"],
+			"log": [["transaction_id", "product_id"]]
+		},
+		"noise": null,
+		"len_restrict": null,
+        "data_types": {
+			"transaction_id": "text",
+			"product_id": "integer",
+			"recorded_on": "timestamp",
+			"quantity": "numeric",
+			"price": "numeric",
+			"price_full": "numeric",
+			"order_type_id": "text"
+		},
+		"ref_integrity": {
+			"product": {"fields": ["product_id"], "fields_ref": ["product_id"]},
+			"transaction_stores": {"fields": ["transaction_id"], "fields_ref": ["transaction_id"]}
+		},
+		"val_restrict": {
+			"quantity": "(quantity > 0)",
+			"price": "(price >= 0)",
+			"price_full": "(price_full > 0)"
+		}
+	}
 
-В случае с таблицей "category", проверка качества реализована так:
+В случае с таблицей "category", проверка качества реализована следующим образом:
 * Обработка пропусков ("missing"): пропуск по "category_id" приводит к удалению строки, пропуски по полю "category_name", заполняются значением "Категория не определена".
 * Обработка дубликатов: дублем считается строка, совпадающая по полю "category_id".
 * Обработка шумов ("noise"): значения поля "category_name" проверяются регулярным выражением "\_". Некорректный символ "\_" заменяется на " ".
@@ -87,6 +110,7 @@ DAG запускает исполнение 10 тасок. При этом, па
 * Обеспечение ссылочной целостности ("ref_integrity"): из таблицы "product" в таблицу "category" добавляются значения поля "category_id", отсутствующие в таблице "category" и присутствующие в таблице "product".
 
 
+![image](https://github.com/asetimankulov/internship/assets/98170451/2dc0d8ad-8cc8-48ec-8e6e-eef1c57fa855)
 
 
 
