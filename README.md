@@ -51,7 +51,7 @@ DAG запускает исполнение 11 тасок. При этом, па
 
 
 где:
-* start_step и end_step - операторы, ничего не исполняющие.
+* end_step - оператор, исполняющийся в случае успешного завершения всех тасок.
 * remove_all_data - оператор Postgres, очищающий все таблицы на слое DDS.
 * brand_upload, category_upload, stores_upload, product_upload, transaction_stores_upload, product_quantity_upload, stock_upload, stores_emails_uload, transaction_upload - операторы Python, исполняющие процедуры проверки качества соответствующих таблиц.
 
@@ -70,52 +70,128 @@ DAG запускает исполнение 11 тасок. При этом, па
 
 Для каждой таблицы сформированы свои требования к качеству данных. Хранение набора параметров для каждой таблицы реализовано следующим образом:
 
-    "transaction": {
+    "category": {
         "missing": {
-			"drop": ["transaction_id", "product_id", "recorded_on", "quantity", "price", "price_full", "price"],
-			"fill": null
+			"drop": ["category_id"],
+			"fill": {"category_name": "Категория не определена"}
 		},
         "duplicate": {
-			"drop": ["transaction_id", "product_id"],
-			"log": [["transaction_id", "product_id"]]
+			"drop": ["category_id"],
+			"log": ["category_id"]
 		},
-		"noise": null,
-		"len_restrict": null,
+        "noise": {"category_name": {"regex": "_", "match_replace": {"_": " "}}},
+        "len_restrict": {"category_name": {"min": 2, "max": null}},
         "data_types": {
-			"transaction_id": "text",
-			"product_id": "integer",
-			"recorded_on": "timestamp",
-			"quantity": "numeric",
-			"price": "numeric",
-			"price_full": "numeric",
-			"order_type_id": "text"
+			"category_id": "text",
+			"category_name": "text"
 		},
-		"ref_integrity": {
-			"product": {"fields": ["product_id"], "fields_ref": ["product_id"]},
-			"transaction_stores": {"fields": ["transaction_id"], "fields_ref": ["transaction_id"]}
-		},
-		"val_restrict": {
-			"quantity": "(quantity > 0)",
-			"price": "(price >= 0)",
-			"price_full": "(price_full > 0)"
-		}
+		"ref_integrity": null,
+		"val_restrict": null
 	}
 
 В случае с таблицей "category", проверка качества реализована следующим образом:
-* Обработка пропусков ("missing"): пропуск по "category_id" приводит к удалению строки, пропуски по полю "category_name", заполняются значением "Категория не определена".
-* Обработка дубликатов: дублем считается строка, совпадающая по полю "category_id".
+* Обработка пропусков ("missing"): пропуск по "category_id" приводит к удалению строки. Пропуски по полю "category_name" заполняются значением "Категория не определена".
+* Обработка дубликатов: дублем считается строка, совпадающая по полю "category_id". Они же логируются.
 * Обработка шумов ("noise"): значения поля "category_name" проверяются регулярным выражением "\_". Некорректный символ "\_" заменяется на " ".
 * Обработка длины значений ("len_restrict"): значение по полю "category_name" будет залоггировано в случае, если его длина  < 2.
 * Обработка типов данных ("data_types"): значения полей "category_id" и "category_name" проверяются на соответствие типу данных text.
-* Обеспечение ссылочной целостности ("ref_integrity"): из таблицы "product" в таблицу "category" добавляются значения поля "category_id", отсутствующие в таблице "category" и присутствующие в таблице "product".
+* Обеспечение ссылочной целостности ("ref_integrity"): нет наборов данных (таблиц), на которые бы ссылался какой-либо внешний ключ.
+
+
+## Формирование и загрузка витрин.
+
+Второй набор python-скриптов, предназначенный для формирование и загрузки витрин, содержит DAG, запускающий процедуры создания витрин, и файл с классом формирования таблиц, на основе которых будут созданы представления.
+
+DAG запускает исполнение 7 тасок. При этом, осуществленно параллельное исполнение тасок, наполняющих таблицы, сформированных на основе данных из dds-слоя. Реализована следующая последовательность исполнения тасок:
 
 
 ![image](https://github.com/asetimankulov/internship/assets/98170451/2dc0d8ad-8cc8-48ec-8e6e-eef1c57fa855)
 
 
 
+где:
+* remove_all_вь_data - оператор Postgres, очищающий все таблицы на слое datamarts.
+* orders_data_upload, stock_data_upload, stores_data_upload - операторы Python, исполняющие процедуры наполнения соответствующих таблиц. При этом, формирование таблицы stores_data осуществляется на основе выборки набора полей из наполняемой таблицы stock_data_upload.
+* create_orders_view, create_stock_view, create_stores_view - создание представления на основе наполняемых таблиц.
 
 
+Модуль data_marts содержит класс формирования таблиц данных, на основе которых формируются витрины данных.
+Класс содержит следующие методы формирования таблиц:
+* create_mart - формирование набора данных и его загрузка в целевую таблицу
+* orders_data - формирование таблицы orders_data
+* stock_data - формирование таблицы stock_data
+* stores_data - формирование таблицы stores_data
 
 
+Для каждой таблицы сформированы свои параметры формирования. Хранение набора параметров для каждой таблицы реализовано следующим образом:
 
+"stock_data": {
+      "conn_info": {
+        "from": {"conn_id": "dds_id", "schema": "dds"},
+        "to": {"conn_id": "dm_id", "schema": "datamarts"}
+      },
+      "join_info": {
+      "source": {"table": "stock", "rename": true},
+      "joined_tables": [
+        {"table": "stores",
+          "how": "inner",
+          "left_on": ["stock_pos"],
+          "right_on": ["stores_pos"],
+          "cast": null,
+          "rename": true},
+        {"table": "product",
+          "how": "inner",
+          "left_on": ["stock_product_id"],
+          "right_on": ["product_product_id"],
+          "cast": null,
+          "rename": true},
+        {"table": "category",
+          "how": "inner",
+          "left_on": ["product_category_id"],
+          "right_on": ["category_category_id"],
+          "cast": null,
+          "rename": true},
+        {"table": "brand",
+          "how": "inner",
+          "left_on": ["product_brand_id"],
+          "right_on": ["brand_brand_id"],
+          "cast": null,
+          "rename": true},
+        {"table": "product_quantity",
+          "how": "inner",
+          "left_on": ["stock_product_id"],
+          "right_on": ["product_quantity_product_id"],
+          "cast": null,
+          "rename": true},
+        {"table": "stores_emails",
+          "how": "inner",
+          "left_on": ["stock_pos"],
+          "right_on": ["stores_emails_pos"],
+          "cast": null,
+          "rename": true}
+      ]
+    },
+      "column_names": {
+        "stock_available_on": "Дата наличия товара",
+        "stores_pos": "ID магазина",
+        "stores_pos_name": "Магазин",
+        "stock_product_id": "ID товара",
+        "product_name_short": "Товар",
+        "stock_available_quantity": "Доступное количество товара, шт.",
+        "stock_cost_per_item": "Закупочная цена товара, руб.",
+        "available_amount": "Сумма доступного остатка, руб.",
+        "category_category_id": "ID категории",
+        "category_category_name": "Категория",
+        "brand_brand": "Бренд",
+        "update_date": "Дата последнего обновления",
+        "load_id": "ID процесса загрузки"
+      }
+    }
+
+В случае с таблицей "category", проверка качества реализована следующим образом:
+* Обработка пропусков ("missing"): пропуск по "category_id" приводит к удалению строки. Пропуски по полю "category_name" заполняются значением "Категория не определена".
+* Обработка дубликатов: дублем считается строка, совпадающая по полю "category_id". Они же логируются.
+* Обработка шумов ("noise"): значения поля "category_name" проверяются регулярным выражением "\_". Некорректный символ "\_" заменяется на " ".
+* Обработка длины значений ("len_restrict"): значение по полю "category_name" будет залоггировано в случае, если его длина  < 2.
+* Обработка типов данных ("data_types"): значения полей "category_id" и "category_name" проверяются на соответствие типу данных text.
+* Обеспечение ссылочной целостности ("ref_integrity"): нет наборов данных (таблиц), на которые бы ссылался какой-либо внешний ключ.
