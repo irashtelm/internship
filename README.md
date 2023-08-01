@@ -49,12 +49,12 @@ DAG запускает исполнение 11 тасок. При этом, па
 
 
 
-![image](https://github.com/asetimankulov/internship/assets/98170451/631dce83-f961-49c1-99c1-703f14c922ce)
+![image](https://github.com/asetimankulov/internship/assets/98170451/373f3841-a492-4d67-b334-a1d1a28c56b6)
+
 
 
 
 где:
-* end_step - оператор, исполняющийся в случае успешного завершения всех тасок.
 * remove_all_data - оператор Postgres, очищающий все таблицы на слое DDS.
 * brand_upload, category_upload, stores_upload, product_upload, transaction_stores_upload, product_quantity_upload, stock_upload, stores_emails_uload, transaction_upload - операторы Python, исполняющие процедуры проверки качества соответствующих таблиц.
 
