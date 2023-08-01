@@ -1,8 +1,16 @@
-{
-key: select_n_rows, val: {
-"schema": "sources",
-"table": "brand",
-"rows_number": 15
-}
-}
+select_n_rows = {
+	"key": "select_n_rows",
+	|val|: {
+		"schema": "sources",
+		"table": "brand",
+		"rows_number": 15
+		}
+	}
 
+email_info = {
+	"key": "email_info",
+	|val|: {
+		"sender": "examplestoresheadquarter@gmail.com",
+		"password": "********"
+		}
+	}

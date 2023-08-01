@@ -1,0 +1,257 @@
+{
+"conn_info": {
+	"from": [{"conn_id": "sources_id", "schema": "sources"},
+	         {"conn_id": "dds_id", "schema": "sources"}],
+	"to": {"conn_id": "dds_id", "schema": "dds"},
+	"tables": {
+		"brand": {
+			"from": {"conn_id": "sources_id", "schema": "sources"},
+			"to": {"conn_id": "dds_id", "schema": "dds"}
+		},
+		"category": {
+			"from": {"conn_id": "sources_id", "schema": "sources"},
+			"to": {"conn_id": "dds_id", "schema": "dds"}
+		},
+		"stores": {
+			"from": {"conn_id": "dds_id", "schema": "sources"},
+			"to": {"conn_id": "dds_id", "schema": "dds"}
+		},
+		"product_quantity": {
+			"from": {"conn_id": "dds_id", "schema": "sources"},
+			"to": {"conn_id": "dds_id", "schema": "dds"}
+		},
+		"product": {
+			"from": {"conn_id": "sources_id", "schema": "sources"},
+			"to": {"conn_id": "dds_id", "schema": "dds"}
+		},
+		"transaction_stores": {
+			"from": {"conn_id": "dds_id", "schema": "sources"},
+			"to": {"conn_id": "dds_id", "schema": "dds"}
+		},
+		"stock": {
+			"from": {"conn_id": "sources_id", "schema": "sources"},
+			"to": {"conn_id": "dds_id", "schema": "dds"}
+		},
+		"transaction": {
+			"from": {"conn_id": "sources_id", "schema": "sources"},
+			"to": {"conn_id": "dds_id", "schema": "dds"}
+		},
+		"stores_emails": {
+			"from": {"conn_id": "dds_id", "schema": "sources"},
+			"to": {"conn_id": "dds_id", "schema": "dds"}
+		}
+	}
+},
+"log_info": {
+	"schema_log": "data_quality",
+	"tables": {
+		"brand": {"table_log": "brand_log", "schema": "data_quality"},
+		"category": {"table_log": "category_log", "schema": "data_quality"},
+		"stores": {"table_log": "stores_log", "schema": "data_quality"},
+		"product_quantity": {"table_log": "product_quantity_log", "schema": "data_quality"},
+		"product": {"table_log": "product_log", "schema": "data_quality"},
+		"transaction_stores": {"table_log": "transaction_stores_log", "schema": "data_quality"},
+		"stock": {"table_log": "stock_log", "schema": "data_quality"},
+		"transaction": {"table_log": "transaction_log", "schema": "data_quality"},
+		"stores_emails": {"table_log": "stores_emails_log", "schema": "data_quality"}
+	}
+},
+"error_handling": {
+    "brand": {
+		"missing": {
+			"drop": ["brand_id"],
+			"fill": {"brand": "Бренд не определён"}
+		},
+		"duplicate": {
+			"drop": ["brand_id"],
+			"log": ["brand_id"]
+		},
+        "noise": {"brand": {"regex": "═", "match_replace": {"═": " "}}},
+        "len_restrict": {"brand": {"min": 2, "max": null}},
+        "data_types": {
+			"brand_id": "integer",
+			"brand": "text"
+		},
+		"ref_integrity": null,
+		"val_restrict": null
+	},
+    "category": {
+        "missing": {
+			"drop": ["category_id"],
+			"fill": {"category_name": "Категория не определена"}
+		},
+        "duplicate": {
+			"drop": ["category_id"],
+			"log": ["category_id"]
+		},
+        "noise": {"category_name": {"regex": "_", "match_replace": {"_": " "}}},
+        "len_restrict": {"category_name": {"min": 2, "max": null}},
+        "data_types": {
+			"category_id": "text",
+			"category_name": "text"
+		},
+		"ref_integrity": null,
+		"val_restrict": null
+	},
+    "product": {
+        "missing": {
+			"drop": ["product_id", "brand_id", "category_id"],
+			"fill": {"name_short": "Товар не определён"}
+		},
+        "duplicate": {
+			"drop": ["product_id"],
+			"log": ["product_id", ["name_short", "brand_id"]]
+		},
+        "noise": {
+			"name_short": {"regex": "^[0-9]*$", "match_replace": null},
+			"product_id": {"regex": "^[a-zA-Z]*$", "match_replace": null}
+		},
+        "len_restrict": {"name_short": {"min": 2, "max": null}},
+        "data_types": {
+			"product_id": "integer",
+			"name_short": "text",
+			"category_id": "text",
+			"pricing_line_id": "integer",
+			"brand_id": "integer"
+		},
+        "ref_integrity": {
+			"brand": {"fields": ["brand_id"], "fields_ref": ["brand_id"]},
+			"category": {"fields": ["category_id"], "fields_ref": ["category_id"]}
+		},
+		"val_restrict": null
+	},
+    "stock": {
+        "missing": {
+			"drop": ["available_on", "product_id", "pos", "available_quantity", "cost_per_item"],
+			"fill": null
+		},
+        "duplicate": {
+			"drop": ["available_on", "product_id", "pos"],
+			"log": [["available_on", "product_id", "pos"]]
+		},
+		"noise": null,
+        "len_restrict": {"pos": {"min": 2, "max": null}},
+        "data_types": {
+			"available_on": "date_excel",
+			"product_id": "integer",
+			"pos": "text",
+			"available_quantity": "numeric",
+			"cost_per_item": "numeric"
+		},
+        "ref_integrity": {
+			"product": {"fields": ["product_id"], "fields_ref": ["product_id"]},
+			"stores": {"fields": ["pos"], "fields_ref": ["pos"]}
+		},
+		"val_restrict": {
+			"available_quantity": "(available_quantity >= 0)",
+			"cost_per_item": "(cost_per_item >= 0)"
+		}
+	},
+    "transaction": {
+        "missing": {
+			"drop": ["transaction_id", "product_id", "recorded_on", "quantity", "price", "price_full", "price"],
+			"fill": null
+		},
+        "duplicate": {
+			"drop": ["transaction_id", "product_id"],
+			"log": [["transaction_id", "product_id"]]
+		},
+		"noise": null,
+		"len_restrict": null,
+        "data_types": {
+			"transaction_id": "text",
+			"product_id": "integer",
+			"recorded_on": "timestamp",
+			"quantity": "numeric",
+			"price": "numeric",
+			"price_full": "numeric",
+			"order_type_id": "text"
+		},
+		"ref_integrity": {
+			"product": {"fields": ["product_id"], "fields_ref": ["product_id"]},
+			"transaction_stores": {"fields": ["transaction_id"], "fields_ref": ["transaction_id"]}
+		},
+		"val_restrict": {
+			"quantity": "(quantity > 0)",
+			"price": "(price >= 0)",
+			"price_full": "(price_full > 0)"
+		}
+	},
+    "transaction_stores": {
+        "missing": {
+			"drop": ["transaction_id"],
+			"fill": null
+		},
+        "duplicate": {
+			"drop": ["transaction_id"],
+			"log": [["transaction_id"]]
+		},
+		"noise": null,
+        "len_restrict": {"pos": {"min": 2, "max": null}},
+        "data_types": {
+			"transaction_id": "text",
+			"pos": "text"
+		},
+        "ref_integrity": {"stores": {"fields": ["pos"], "fields_ref": ["pos"]}},
+		"val_restrict": null
+    },
+    "stores": {
+        "missing": {
+			"drop": ["pos"],
+			"fill": {"pos_name": "Магазин не определён"}
+		},
+        "duplicate": {
+			"drop": ["pos"],
+			"log": [["pos"]]
+		},
+		"noise": null,
+        "len_restrict": {"pos_name": {"min": 2, "max": null}},
+        "data_types": {
+			"pos": "text",
+			"pos_name": "text"
+		},
+		"ref_integrity": null,
+		"val_restrict": null
+    },
+    "product_quantity": {
+        "missing": {
+			"drop": ["product_id"],
+			"fill": {"min_quantity": 1}
+		},
+        "duplicate": {
+			"drop": ["product_id"],
+			"log": [["product_id"]]
+		},
+        "noise": null,
+        "len_restrict": null,
+        "data_types": {
+			"product_id": "integer",
+			"min_quantity": "numeric"
+		},
+        "ref_integrity": {
+			"product": {"fields": ["product_id"], "fields_ref": ["product_id"]}
+		},
+		"val_restrict": null
+	},
+    "stores_emails": {
+        "missing": {
+			"drop": ["pos"],
+			"fill": null
+		},
+        "duplicate": {
+			"drop": ["pos"],
+			"log": [["pos"]]
+		},
+        "noise": null,
+        "len_restrict": null,
+        "data_types": {
+			"pos": "text",
+			"email": "text"
+		},
+        "ref_integrity": {
+			"stores": {"fields": ["pos"], "fields_ref": ["pos"]}
+		},
+		"val_restrict": null
+	}
+}
+}
