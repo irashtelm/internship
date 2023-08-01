@@ -61,9 +61,82 @@ FROM datamarts.orders_data_mart
 GROUP BY "Магазин"
 ORDER BY "Доля продаж в рублях, %" DESC;
 
+-- Чарт "Доля продаж в штуках, %"
+SELECT "Магазин" AS "Магазин",
+       sum("Количество товара, шт.") AS "SUM(Количество товара, шт.)"
+FROM datamarts.orders_data_mart
+GROUP BY "Магазин"
+ORDER BY "SUM(Количество товара, шт.)" DESC;
 
+-- Чарт "Доля продаж в рублях (по категориям), %"
+SELECT "Категория" AS "Категория",
+       sum("Объем продаж по категории, руб.") AS "SUM(Объем продаж по категории, руб.)"
+FROM
+  (WITH table_rnum AS
+     (SELECT DATE("Дата и время транзакции") as "Дата транзакции",
+             "Категория",
+             SUM("Сумма заказа после скидки, руб.") AS sum_col,
+             ROW_NUMBER() OVER (partition by DATE("Дата и время транзакции")
+                                ORDER BY SUM("Сумма заказа после скидки, руб.") DESC) AS rnum
+      FROM orders_data_mart
+      WHERE 1=1
+      GROUP BY DATE("Дата и время транзакции"),
+               "Категория"),
+        table_raiting AS
+     (SELECT "Дата транзакции",
+             "Категория",
+             sum_col,
+             CASE
+                 WHEN rnum < 5 THEN "Категория"
+                 ELSE 'Остальные категории'
+             END AS cat_group
+      FROM table_rnum) select distinct "Дата транзакции",
+                                       "Категория",
+                                       "Объем продаж по категории, руб."
+   from
+     (SELECT "Дата транзакции",
+             cat_group as "Категория",
+             SUM(sum_col) OVER (PARTITION BY "Дата транзакции",
+                                             cat_group) AS "Объем продаж по категории, руб."
+      FROM table_raiting) s) AS virtual_table
+WHERE "Дата транзакции" IN (TO_DATE('2021-06-01', 'YYYY-MM-DD'))
+GROUP BY "Категория"
+ORDER BY "SUM(Объем продаж по категории, руб.)" DESC;
 
-
+-- Чарт "Доля продаж в рублях (по брендам), %"
+SELECT "Бренд" AS "Бренд",
+       sum("Объем продаж по категории, руб.") AS "SUM(Объем продаж по категории, руб.)"
+FROM
+  (WITH table_rnum AS
+     (SELECT DATE("Дата и время транзакции") as "Дата транзакции",
+             "Бренд",
+             SUM("Сумма заказа после скидки, руб.") AS sum_col,
+             ROW_NUMBER() OVER (partition by DATE("Дата и время транзакции")
+                                ORDER BY SUM("Сумма заказа после скидки, руб.") DESC) AS rnum
+      FROM orders_data_mart
+      WHERE 1=1
+      GROUP BY DATE("Дата и время транзакции"),
+               "Бренд"),
+        table_raiting AS
+     (SELECT "Дата транзакции",
+             "Бренд",
+             sum_col,
+             CASE
+                 WHEN rnum < 5 THEN "Бренд"
+                 ELSE 'Остальные бренды'
+             END AS cat_group
+      FROM table_rnum) select distinct "Дата транзакции",
+                                       "Бренд",
+                                       "Объем продаж по категории, руб."
+   from
+     (SELECT "Дата транзакции",
+             cat_group as "Бренд",
+             SUM(sum_col) OVER (PARTITION BY "Дата транзакции",
+                                             cat_group) AS "Объем продаж по категории, руб."
+      FROM table_raiting) s) AS virtual_table
+WHERE "Дата транзакции" IN (TO_DATE('2021-06-17', 'YYYY-MM-DD'))
+GROUP BY "Бренд"
+ORDER BY "SUM(Объем продаж по категории, руб.)" DESC;
 
 
 
