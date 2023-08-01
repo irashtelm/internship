@@ -215,17 +215,20 @@ class CreateMarts:
         cols = self.data_marts_params['column_names'].keys()
         cols_drop = [col for col in self.data.columns if col not in cols]
         self.data.drop(columns=cols_drop, inplace=True)
-        query = "stock_available_on == stock_available_on.max()" \
-                "& stock_available_quantity < product_quantity_min_quantity"
+        query = "stock_available_quantity < product_quantity_min_quantity"
         self.data.query(query, inplace=True)
 
-        # переименование полей отправляемой таблицы
-        data = self.data[self.data_marts_params['column_names'].keys()]\
-            .rename(columns=self.data_marts_params['column_names'])
-        emails = self.data_marts_params['column_names']['stores_emails_email']
+        # отправка данных только за последнюю дату
+        data = self.data.query("stock_available_on == stock_available_on.max()")
         # отправка данных по каждому магазину
-        for email in data[emails].unique():
-            data_send = data[data[emails] == email]
+        for email in data['stores_emails_email'].unique():
+            data_send = data[data['stores_emails_email'] == email]
+            # переименование полей отправляемой таблицы и их выборка
+            print(f"there {email}")
+            print(f"there-1 {data_send.columns}")
+            data_send = data_send[self.data_marts_params['column_names'].keys()]\
+                .rename(columns=self.data_marts_params['column_names'])
+            print(f"there-2 {data_send.columns}")
             data_send = data_send[['Магазин', 'ID товара', 'Товар', 'Дата наличия товара',
                                    'Доступное количество товара, шт.', 'Минимальное количество товара, шт.']]
             CreateMarts.send_message(subject="Товары с остатком ниже минимально допустимого",
