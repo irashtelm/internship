@@ -168,16 +168,9 @@ with DAG('sources_to_dds',
                                                 dq.dq_params['error_handling']['transaction']
                                         }
                                         )
-    # фиксация успешного завершения исполнения всех предыдущих задач
-    end_upload = EmptyOperator(task_id='end_upload',
-                               trigger_rule="all_success",)
 
     remove_all_data >> [brand_upload, category_upload, stores_upload]
     [brand_upload, category_upload] >> product_upload
     stores_upload >> [transaction_stores_upload, stock_upload, stores_emails_upload]
     product_upload >> [product_quantity_upload, stock_upload, transaction_upload]
     transaction_stores_upload >> transaction_upload
-    stores_emails_upload >> end_upload
-    stock_upload >> end_upload
-    transaction_upload >> end_upload
-    product_quantity_upload >> end_upload
